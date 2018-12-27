@@ -1,0 +1,14 @@
+{
+  "params_ranges": [
+    {
+      "name": "$Au",
+      "min": 1e-4,
+      "max":1e+4
+    }, {
+      "name": "$Bu",
+      "min": 1e-2,
+      "max": 1e+2
+    }
+  ]
+}
+

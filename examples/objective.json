@@ -1,0 +1,14 @@
+{
+    "objective": [
+        {
+            "node": "A",
+            "proba": 0.75
+        },{
+            "node": "B",
+            "proba": 0
+        },{
+            "node": "C",
+            "proba": 0
+        }
+    ]
+}
