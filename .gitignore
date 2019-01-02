@@ -1,3 +1,14 @@
+# Compiled program
+MaBoSS-Optim
+plsa.*
+
+# Python compiled code
+*.pyc
+__pycache__/
+
+# IDE files
+.vscode/
+
 # Prerequisites
 *.d
 

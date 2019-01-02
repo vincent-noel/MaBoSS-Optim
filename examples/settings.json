@@ -1,0 +1,59 @@
+{
+  "cell_lines" : [
+    {
+      "conditions": [
+        {
+          "name": "$Au",
+          "value": 1
+        }, {
+          "name": "$Ad",
+          "value": 1
+        }
+      ],
+      "objectives": [
+        {
+          "name": "A",
+          "proba": 0.5
+        }, {
+          "name": "B",
+          "proba": 0
+        }
+      ]
+    }, {
+      "conditions": [
+        {
+          "name": "$Au",
+          "value": 0
+        }, {
+          "name": "$Ad",
+          "value": 1
+        }
+      ],
+      "objectives": [
+        {
+          "name": "A",
+          "proba": 0.1
+        }, {
+          "name": "B",
+          "proba": 0
+        }
+      ]
+    }
+  ],
+  "optimization_parameters": [
+    {
+      "name": "$Bu",
+      "initial": 5e+3,
+      "min": 1e-4,
+      "max": 1e+4,
+      "digits": 5
+    },
+    {
+      "name": "$escape",
+      "initial": 5e+1,
+      "min": 1e-2,
+      "max": 1e+2,
+      "digits": 3
+    }
+  ],
+}

@@ -11,34 +11,48 @@ OptimStruct * optim_data;
 
 double score() {
 
-	std::map<std::string, double> parameter_set;
-
-	int i=0;
-	for (const auto& param_range : optim_data->params_ranges) {
-		parameter_set[param_range.first] = optim_data->parameters[i];
-		i++;
-	}
-
-	PSetSimulation * simulation = new PSetSimulation(optim_data->network_file, optim_data->config_file, parameter_set);
-	simulation->run();
-
 	double score = 0;
-	for (const auto& kv : optim_data->objective) {
-		std::string node_name = kv.first;
-		double node_score = kv.second;
+	int i_cond = 0;
+	for (const auto& cell_line : optim_data->cellLines) {
 
-		score += pow(node_score - simulation->getLastNodeDist(node_name), 2);
+		std::map<std::string, double> parameter_set;
+		
+		// First, the parameters to "configure" the cell line : conditions
+		for (const auto& param : cell_line->conditions)
+			parameter_set[param.first] = param.second;
+
+		// Second, the optimization parameters
+		int i = 0;
+		for (const auto& optim_param : optim_data->optimizationParameters) {
+			parameter_set[optim_param->name] = optim_data->parameters[i];
+			i++;
+		}
+
+		PSetSimulation * simulation = new PSetSimulation(optim_data->network_file, optim_data->config_file, parameter_set);
+		simulation->run();
+
+		double sub_score = 0;
+		for (const auto& objective : cell_line->objectives) {
+			std::string node_name = objective.first;
+			double node_score = objective.second;
+
+			sub_score += pow(node_score - simulation->getLastNodeDist(node_name), 2);
+		}
+		score += sub_score;
+		i_cond++;
+
+		delete simulation;
 	}
 
-	delete simulation;
 	return score;
 }
 
-Optimization::Optimization(const char * network_file, const char * config_file, std::map<std::string, double> objective, std::map<std::string, std::pair<double, double>> params_ranges, double lambda) {
+Optimization::Optimization(const char * network_file, const char * config_file, std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> settings, double lambda) {
+
 	optim_data = new OptimStruct(
 		network_file, config_file, 
-		params_ranges, objective, 
-		(double *) malloc(params_ranges.size()*sizeof(double)) 
+		settings.first, settings.second,
+		(double *) malloc(settings.second.size()*sizeof(double)) 
 	);
 
 	sa = InitPLSA();
@@ -48,34 +62,35 @@ Optimization::Optimization(const char * network_file, const char * config_file, 
 	sa->freeze_count = 5;
 	sa->scoreFunction = &score;
 
-	params = InitPLSAParameters(optim_data->params_ranges.size());
+	params = InitPLSAParameters(settings.second.size());
 
 	int i=0;	
-	for(const auto& param_range: params_ranges) {
-		char * name = (char *) param_range.first.c_str();
-		std::pair<double, double> range = param_range.second;
-		// std::cout << "Param " << name << ": {" << range.first << ", " << range.second << "}" << std::endl;
-		params->array[i] = (ParamList) { &(optim_data->parameters[i]), 1, (Range) {range.first,range.second}, 2, name};
+	for(const auto& param: settings.second) {
+		char * name = (char *) param->name.c_str();
+		params->array[i] = (ParamList) { &(optim_data->parameters[i]), param->initialValue, (Range) {param->lowerBound,param->upperBound}, param->signicantDigits, name};
 		i++;
-	}
+	}	
 
 }
 
-void Optimization::run(std::ostream& output) {
+
+std::pair<double, std::map<std::string, double>> Optimization::run() {
 	
 	res = runPLSA();
-	// output << "Parameters :" << std::endl;
+
+	std::map<std::string, double> result_parameters;
 
 	int i=0;
-	for (const auto& param_range: optim_data->params_ranges) {
-		output << param_range.first << ", " << optim_data->parameters[i] << std::endl;
+	for (const auto& param: optim_data->optimizationParameters) {
+		result_parameters[param->name] = optim_data->parameters[i];
 		i++;
 	}
-	output << "Error, " << res->score << std::endl;
+
+	return std::make_pair(res->score, result_parameters);
 }
 
 Optimization::~Optimization() {
+	delete optim_data;
 	free(res->params);
-	free(params->array);
 	free(res);
 }

@@ -1,9 +1,6 @@
 [submodule "src/plsa"]
 	path = src/plsa
 	url = https://github.com/vincent-noel/plsa.git
-[submodule "src/fast-cpp-csv-parser"]
-	path = src/fast-cpp-csv-parser
-	url = https://github.com/ben-strasser/fast-cpp-csv-parser.git
 [submodule "src/MaBoSS-env-2.0"]
 	path = src/MaBoSS-env-2.0
 	url = https://github.com/vincent-noel/MaBoSS-env-2.0

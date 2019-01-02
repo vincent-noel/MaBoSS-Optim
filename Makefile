@@ -43,9 +43,9 @@ MaBoSS-Optim: main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libmaboss
 # Test
 test:
 	make
-	./MaBoSS-Optim -c examples/Four_cycle.cfg -p examples/params_ranges.csv -f examples/objective.csv examples/Four_cycle.bnd > result
-	diff tests/expected_result result
-	rm -f result
+	./MaBoSS-Optim -c examples/Four_cycle.cfg -s examples/settings.json -o tests/result.json examples/Four_cycle.bnd
+	python -m unittest tests.test_results
+	rm -f tests/result.json
 
 clean: 
 	rm -f MaBoSS-Optim main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libmaboss.so $(MABOSS_INCLUDE_DIR)/*.h plsa.log plsa.state

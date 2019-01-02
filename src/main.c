@@ -4,11 +4,9 @@
 #include <fstream>		// std::ofstream
 
 #include <jsoncpp/json/json.h>
-#include "fast-cpp-csv-parser/csv.h"
 
 #include "MaBEstEngine.h"
 #include "Optimization.h"
-
 
 const char* prog = "MaBoSS-Optim";
 
@@ -16,100 +14,88 @@ static int usage(std::ostream& os = std::cerr)
 {
   os << "\nUsage:\n\n";
   os << "  " << prog << " [-h|--help]\n\n";
-  os << "  " << prog << " -c|--config CONF_FILE -p PARAMS_RANGES_FILE -f OBJECTIVE_FILE [-l|--lambda LAMBDA_VALUE] BOOLEAN_NETWORK_FILE\n\n";
+  os << "  " << prog << " -c|--config CONF_FILE -s|--settings SETTINGS_FILE -o|--output RESULT_FILE [-l|--lambda LAMBDA_VALUE] BOOLEAN_NETWORK_FILE\n\n";
   return 1;
 }
 
-std::map<std::string, std::pair<double, double>> readParamsRangesCSV(const char * ranges_filename) {
-	
-	std::map<std::string, std::pair<double, double>> ranges;
+std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> readSettingsJSON(const char * settings_filename) {
 
-	io::CSVReader<3> in(ranges_filename);
-
-	std::string name;
-	double min; 
-	double max;
-
-	while(in.read_row(name, min, max)) {
-		std::pair<double, double> range = {min, max};
-		ranges[name] = range;
-	}
-
-	return ranges;
-}
+	std::vector<CellLine *> cell_lines;
+	std::vector<OptimParameter *> optim_parameters;
 
 
-std::map<std::string, std::pair<double, double>> readParamsRangesJSON(const char * ranges_filename) {
-	
-	std::map<std::string, std::pair<double, double>> ranges;
-
-	std::ifstream ranges_file(ranges_filename);
-
+	std::ifstream settings_file(settings_filename);
     Json::Reader reader;
     Json::Value obj;
 
-	reader.parse(ranges_file, obj);
+	reader.parse(settings_file, obj);
 
-	for (const auto& param_range: obj["params_ranges"]) {
-		std::string param_name = param_range["name"].asString();
-		std::pair<double, double> range = {param_range["min"].asDouble(), param_range["max"].asDouble()};	
-		ranges[param_name] = range; 
+	for (const auto& cell_line: obj["cell_lines"]) {
+
+		std::map<std::string, double> conditions;
+		std::map<std::string, double> objectives;
+
+		for (const auto& condition: cell_line["conditions"]) {
+			std::string parameter_name = condition["name"].asString();
+			double parameter_value = condition["value"].asDouble();
+
+			conditions[parameter_name] = parameter_value;
+		}
+
+		for (const auto& objective: cell_line["objectives"]) {
+			std::string objective_name = objective["name"].asString();
+			double objective_value = objective["proba"].asDouble();
+
+			objectives[objective_name] = objective_value;
+		}
+
+		CellLine * cell_line_obj = new CellLine(conditions, objectives);
+		cell_lines.push_back(cell_line_obj);
 	}
 
-	ranges_file.close();
-	return ranges;
+	for (const auto& optim_param: obj["optimization_parameters"]) {
+
+		std::string p_name = optim_param["name"].asString();
+		double p_lb = optim_param["min"].asDouble();
+		double p_ub = optim_param["max"].asDouble();
+
+		double initial;
+		if (optim_param.isMember("initial"))
+			initial = optim_param["initial"].asDouble();
+		else	
+			initial = (p_lb+p_lb)/2.0;
+
+		int digits = 3;
+		if (optim_param.isMember("digits"))
+			digits = optim_param["digits"].asInt();
+		
+		OptimParameter * parameter = new OptimParameter(p_name, p_lb, p_ub, initial, digits);
+		optim_parameters.push_back(parameter);
+	}
+
+	settings_file.close();
+
+	return std::make_pair(cell_lines, optim_parameters);
 }
 
-std::map<std::string, double> readObjectiveCSV(const char * objective_filename) {
-	
-	std::map<std::string, double> objective;
-	io::CSVReader<2> in(objective_filename);
+void writeResults(const char * result_file, std::pair<double, std::map<std::string, double>> result) {
 
-	std::string name;
-	double prob;
+	Json::Value root;
+	root["error"] = result.first;
 
-	while(in.read_row(name, prob)) {
-		objective[name] = prob;
+	Json::Value params;
+	for (const auto& param: result.second) {
+		Json::Value json_param;
+		json_param["name"] = param.first;
+		json_param["value"] = param.second;	
+
+		params.append(json_param);
 	}
 
-	return objective;
-}
+	root["parameters"] = params;
 
-std::map<std::string, double> readObjectiveJSON(const char * objective_filename) {
-	
-	std::map<std::string, double> objective;
-
-	std::ifstream objective_file(objective_filename);
-
- 	Json::Reader reader;
-    Json::Value obj;
-
-	reader.parse(objective_file, obj);
-
-	for (const auto& node_objective: obj["objective"]) {
-		std::string node_name = node_objective["node"].asString();
-		double node_proba = node_objective["proba"].asDouble();	
-		objective[node_name] = node_proba; 
-	}
-
-	objective_file.close();
-	return objective;
-}
-
-const char * getExtension(const char * filename) {
-
-	std::string filename_str = std::string(filename);
-
-	std::string::size_type idx = filename_str.rfind('.');
-
-	if(idx != std::string::npos)
-	{
-		return filename_str.substr(idx+1).c_str();
-	}
-	else
-	{
-		return "";
-	}
+	std::ofstream outputFileStream(result_file);
+	outputFileStream << root;
 }
 
 int main(int argc, const char * argv[])
@@ -117,8 +103,8 @@ int main(int argc, const char * argv[])
 	const char * config_file = NULL;
 	const char * network_file = NULL;
 	const char * result_file = NULL;
-	std::map<std::string, std::pair<double, double>> params_ranges;
-	std::map<std::string, double> objective;
+
+	std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> optim_settings;
 
 	double lambda = 1;
 
@@ -145,31 +131,13 @@ int main(int argc, const char * argv[])
 
 				result_file = argv[++nn];
 
-			} else if (!strcmp(s, "-p") || !strcmp(s, "--parameters-ranges")) {
+			} else if (!strcmp(s, "-s") || !strcmp(s, "--settings")) {
 				if (nn == argc-1) {
 					std::cerr << '\n' << prog << ": missing value after option " << s << '\n'; return usage();
 				}
 
-				const char * ranges_filename = argv[++nn];
-				if (!strcmp(getExtension(ranges_filename), "csv")) {
-					params_ranges = readParamsRangesCSV(ranges_filename);
-
-				} else if (!strcmp(getExtension(ranges_filename), "json")) {
-					params_ranges = readParamsRangesJSON(ranges_filename);
-				}
-
-			} else if (!strcmp(s, "-f") || !strcmp(s, "--fit-objective")) {
-				if (nn == argc-1) {
-					std::cerr << '\n' << prog << ": missing value after option " << s << '\n'; return usage();
-				}
-
-				const char * objective_filename = argv[++nn];
-				if (!strcmp(getExtension(objective_filename), "csv")) {
-					objective = readObjectiveCSV(objective_filename);
-
-				} else if (!strcmp(getExtension(objective_filename), "json")) {
-					objective = readObjectiveJSON(objective_filename);
-				}
+				const char * settings_filename = argv[++nn];
+				optim_settings = readSettingsJSON(settings_filename);
 
 			} else if (!strcmp(s, "-l") || !strcmp(s, "--lambda")) {
 				if (nn == argc-1) {
@@ -190,20 +158,23 @@ int main(int argc, const char * argv[])
 		}
 	}
 
-	if (network_file != NULL && config_file != NULL && objective.size() > 0 && params_ranges.size() > 0) {
+	if (network_file != NULL && config_file != NULL && result_file != NULL){// && objective.size() > 0 && params_ranges.size() > 0) {
 		try {
 			
 			MaBEstEngine::init();
-			Optimization * optim = new Optimization(network_file, config_file, objective, params_ranges, lambda);
+
+			Optimization * optim;
 			
-			if (result_file == NULL)
-				optim->run(std::cout);
-			else {
-				std::ofstream output;
-				output.open(result_file, std::ofstream::out);
-				optim->run(output);
-				output.close();
+			if (optim_settings.first.size() > 0 && optim_settings.first[0]->objectives.size() > 0 && optim_settings.second.size() > 0) {
+				optim = new Optimization(network_file, config_file, optim_settings, lambda);
+	
+			} else {
+				std::cerr << '\n' << prog << ": no optimization settings " << std::endl;
+				return usage();
 			}
+
+			std::pair<double, std::map<std::string, double>> result = optim->run();
+			writeResults(result_file, result);
 
 			delete optim;
 

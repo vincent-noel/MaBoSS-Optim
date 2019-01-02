@@ -10,34 +10,54 @@
 // Importing PLSA types
 #include "types.h"
 
+class CellLine {
+	public:
+
+	std::map<std::string, double> conditions;
+	std::map<std::string, double> objectives;
+
+	CellLine(std::map<std::string, double> conditions, std::map<std::string, double> objectives) : conditions(conditions), objectives(objectives) {}
+};
+
+class OptimParameter {
+	public:
+
+	std::string name;
+	double 		lowerBound;
+	double 		upperBound;
+	double 		initialValue;
+	int 		signicantDigits;
+
+	OptimParameter(std::string name, double lowerBound, double upperBound, double initialValue, int signicantDigits) :
+		name(name), lowerBound(lowerBound), upperBound(upperBound), initialValue(initialValue), signicantDigits(signicantDigits) {}
+};
+
 class OptimStruct {
 public:
 	const char * network_file;
 	const char * config_file;
 
-	std::map<std::string, std::pair<double, double>> params_ranges;
-	std::map<std::string, double> objective;
+	const std::vector<CellLine *> cellLines;
+	const std::vector<OptimParameter *> optimizationParameters;
 
 	double * parameters;
 
-	OptimStruct(const char * network_file, const char *config_file, std::map<std::string, std::pair<double, double>> params_ranges, std::map<std::string, double> objective, double * parameters) :
-		network_file(network_file), config_file(config_file), params_ranges(params_ranges), objective(objective), parameters(parameters) {}
+	OptimStruct(const char * network_file, const char * config_file, const std::vector<CellLine *> cellLines, const std::vector<OptimParameter *> optimizationParameters, double * parameters) :
+		network_file(network_file), config_file(config_file), cellLines(cellLines), optimizationParameters(optimizationParameters), parameters(parameters) {}
 };
 
 class Optimization {
-
 
 	SAType * sa;
 	PArrPtr * params;
 	PLSARes * res;
 
 	long newSeed();
-	// double score();
 
 public:
 
-	Optimization(const char *, const char *, std::map<std::string, double>, std::map<std::string, std::pair<double, double>>, double);
+	Optimization(const char *, const char *, std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>>, double);
 	~Optimization();
-	void run(std::ostream& output);
+	std::pair<double, std::map<std::string, double>> run();
 };
 
