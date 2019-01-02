@@ -10,7 +10,7 @@
 #include "Optimization.h"
 
 
-const char* prog = "MaBoSSFitting";
+const char* prog = "MaBoSS-Optim";
 
 static int usage(std::ostream& os = std::cerr)
 {
