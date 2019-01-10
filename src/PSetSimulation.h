@@ -38,8 +38,6 @@
 class PSetSimulation {
 
   std::map<std::string, double> parameter_set;
-  // const char * network_filename;
-  // const char * config_filename;
 
   Network * network;
   RunConfig * config;
@@ -74,8 +72,20 @@ public:
   void run();
   void display(std::ostream & out);
 
+  const std::vector<Node *> getNodes() const;
 
-  const STATE_MAP<NetworkState_Impl, double> getLastStateDist();
-  const std::map<Node *, double> getLastNodeDist();
+  const std::map<double, std::map<Node *, double> > getNodesDists() const;
+  const std::map<double, STATE_MAP<NetworkState_Impl, double> > getStatesDists() const;
+
+  const STATE_MAP<NetworkState_Impl, double> getNthStateDist(int nn);
+  const std::map<Node *, double> getNthNodesDist(int nn);
+
+  const std::map<Node *, double> getFirstNodesDist();
+  const std::map<Node *, double> getLastNodesDist();
+  const std::map<Node *, double> getMaxNodesDist();
+
+  const double getFirstNodeDist(std::string& label);
   const double getLastNodeDist(std::string& label);
+  const double getMaxNodeDist(std::string& label);
+
 };

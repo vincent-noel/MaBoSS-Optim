@@ -27,67 +27,129 @@
      Dec 2018
 */
 #include "PSetSimulation.h"
+#include <algorithm>    // std::max
 
 void PSetSimulation::run() {
 
 	// Getting list of parameters 
 	SymbolTable* listOfParameters = SymbolTable::getInstance();
-
+    
 	// Using parameter set
 	for (auto const & parameter : parameter_set) {
-		const Symbol * param = listOfParameters->getSymbol(parameter.first);
 
-		if (param == NULL)
-			throw BNException("parameter " + (parameter.first) + " not defined in the config file");
+    if (parameter.first.rfind("$", 0) == 0){
+      const Symbol * param = listOfParameters->getSymbol(parameter.first);
 
-		listOfParameters->setSymbolValue(param, parameter.second);
+      if (param == NULL)
+        throw BNException("parameter " + (parameter.first) + " not defined in the config file");
+
+      listOfParameters->setSymbolValue(param, parameter.second);
+    }
+    else {
+      Node * node = network->getNode(parameter.first);
+      IStateGroup::setNodeProba(network, node, parameter.second); 
+    }
 	}
 
 	// Running the simulation
 	simulation = new MaBEstEngine(network, config);
 	simulation->run(NULL);
+}
+const std::vector<Node *> PSetSimulation::getNodes() const {
+  return network->getNodes();
+}
+
+const std::map<double, std::map<Node *, double> > PSetSimulation::getNodesDists() const {
+  return simulation->getNodesDists();
+}
+
+const std::map<double, STATE_MAP<NetworkState_Impl, double> > PSetSimulation::getStatesDists() const {
+  return simulation->getStateDists();
+}
+
+
+const STATE_MAP<NetworkState_Impl, double> PSetSimulation::getNthStateDist(int nn) {
+  return simulation->getNthStateDist(nn);
+}
+
+const std::map<Node *, double> PSetSimulation::getNthNodesDist(int nn) {
+  return simulation->getNthNodesDist(nn);
+}
+
+const std::map<Node *, double> PSetSimulation::getFirstNodesDist() {
+  return getNthNodesDist(0);
+}
+
+const std::map<Node *, double> PSetSimulation::getLastNodesDist() {
+  return getNthNodesDist(simulation->getMaxTickIndex());
 
 }
 
-const STATE_MAP<NetworkState_Impl, double> PSetSimulation::getLastStateDist() {
-  return simulation->getLastStateDist();
-}
+const std::map<Node *, double> PSetSimulation::getMaxNodesDist() {
+  std::map<Node*, double> result;
 
-const std::map<Node *, double> PSetSimulation::getLastNodeDist() {
-  const STATE_MAP<NetworkState_Impl, double> last_state_dist = simulation->getLastStateDist();
+  const std::map<double, std::map<Node *, double>> node_dist = simulation->getNodesDists();
 
-  std::map<Node *, double> last_node_dist;
-	const std::vector<Node*>& nodes = network->getNodes();
+  std::map<double, std::map<Node *, double>>::const_iterator begin = node_dist.begin();
+  std::map<double, std::map<Node *, double>>::const_iterator end = node_dist.end();
 
-  for (const auto& node : nodes) {
+  // double max = 0;
+  while(begin != end) {
 
-      double dist = 0.0;
-      for (const auto& pair : last_state_dist) {
-        NetworkState state = pair.first;
-        dist += pair.second * ((double) state.getNodeState(node));
+    std::map<Node *, double>::const_iterator nodes_begin = begin->second.begin();
+    std::map<Node *, double>::const_iterator nodes_end = begin->second.end();
+
+    while(nodes_begin != nodes_end) {
+
+      // First round, we need to initialise the result
+      if (result.find(nodes_begin->first) == result.end()) {
+        result[nodes_begin->first] = 0;
       }
-      last_node_dist[node] = dist;
+
+      result[nodes_begin->first] = std::max(result[nodes_begin->first], nodes_begin->second);
+      nodes_begin++;
+    }
+
+    begin++;
   }
 
-  return last_node_dist;
+  return result;
+}
+
+const double PSetSimulation::getFirstNodeDist(std::string& label) {
+  return simulation->getNthNodeDist(network->getNode(label), 0);
 }
 
 const double PSetSimulation::getLastNodeDist(std::string& label) {
-  const STATE_MAP<NetworkState_Impl, double> last_state_dist = simulation->getLastStateDist();
-  Node * node = network->getNode(label);
+  
+  return simulation->getNthNodeDist(network->getNode(label), simulation->getMaxTickIndex());
+}
 
-  double dist = 0.0;
-  for (const auto& pair : last_state_dist) {
-    NetworkState state = pair.first;
-    dist += pair.second * ((double) state.getNodeState(node));
+const double PSetSimulation::getMaxNodeDist(std::string& node_label) {
+  
+  double result = 0;
+  const std::map<double, std::map<Node *, double>> node_dist = simulation->getNodesDists();
+
+  std::map<double, std::map<Node *, double>>::const_iterator begin = node_dist.begin();
+  std::map<double, std::map<Node *, double>>::const_iterator end = node_dist.end();
+
+  Node * node = network->getNode(node_label);
+
+  while(begin != end) {
+
+    std::map<Node *, double> t_map = begin->second;
+    result = std::max(result, t_map[node]);
+
+    begin++;
   }
 
-  return dist;
+  return result;
 }
+
 
 void PSetSimulation::display(std::ostream & out) {
 
-	const STATE_MAP<NetworkState_Impl, double> state_dist = simulation->getLastStateDist();
+	const STATE_MAP<NetworkState_Impl, double> state_dist = simulation->getNthStateDist(simulation->getMaxTickIndex());
 
 	for (const auto& pair: state_dist) {
 		NetworkState state = pair.first;
