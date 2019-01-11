@@ -97,6 +97,83 @@ std::pair<double, std::map<std::string, double>> Optimization::run() {
 	return std::make_pair(res->score, result_parameters);
 }
 
+void Optimization::displaySimulationsResults(std::ostream& out) {
+
+	int i_cond = 0;
+
+	for (const auto& cell_line : optim_data->cellLines) {
+
+		std::map<std::string, double> parameter_set;
+		
+		// First, the parameters to "configure" the cell line : conditions
+		for (const auto& param : cell_line->conditions)
+			parameter_set[param.first] = param.second;
+
+		// Second, the optimization parameters
+		int i = 0;
+		for (const auto& optim_param : optim_data->optimizationParameters) {
+			parameter_set[optim_param->name] = optim_data->parameters[i];
+			i++;
+		}
+
+		PSetSimulation * simulation = new PSetSimulation(optim_data->network_file, optim_data->config_file, parameter_set);
+		simulation->run();
+
+		if (i_cond == 0) {
+			out << "Cell line\t";
+
+			std::vector<Node *> nodes = simulation->getNodes();
+
+			for (const auto& node: nodes) {
+				out << node->getLabel() << "\t";
+			}
+
+			for (const auto& node:nodes) {
+				out << "max(" << node->getLabel() << ")\t";
+			}
+
+			out << "Error" << std::endl;
+		}
+
+		out << i_cond << "\t";
+
+		std::map<Node *, double> node_end_results = simulation->getLastNodesDist();
+
+		for (const auto& result:node_end_results) {
+			out << result.second << "\t";
+		}
+
+		std::map<Node *, double> node_max_results = simulation->getMaxNodesDist();
+
+		for (const auto& result:node_max_results) {
+			out << result.second << "\t";
+		}
+
+		double sub_score = 0;
+		for (const auto& objective : cell_line->objectives) {
+			std::string node_name = objective.first;
+			double node_score = objective.second;
+		
+			// If type is informed, and it's max
+			if (cell_line->objectives_types[node_name] == "max") {
+				sub_score += pow(node_score - simulation->getMaxNodeDist(node_name), 2);
+
+			// Else, we suppose it's last time point
+			} else {
+				sub_score += pow(node_score - simulation->getLastNodeDist(node_name), 2);
+
+			}
+		}
+		
+		out << sub_score << std::endl;
+
+		i_cond++;
+
+		delete simulation;
+	}
+
+}
+
 Optimization::~Optimization() {
 	delete optim_data;
 	free(res->params);

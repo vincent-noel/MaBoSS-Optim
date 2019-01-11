@@ -61,5 +61,6 @@ public:
 	Optimization(const char *, const char *, std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>>, double);
 	~Optimization();
 	std::pair<double, std::map<std::string, double>> run();
+	void displaySimulationsResults(std::ostream & out);
 };
 

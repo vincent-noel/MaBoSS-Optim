@@ -14,7 +14,7 @@ static int usage(std::ostream& os = std::cerr)
 {
   os << "\nUsage:\n\n";
   os << "  " << prog << " [-h|--help]\n\n";
-  os << "  " << prog << " -c|--config CONF_FILE -s|--settings SETTINGS_FILE -o|--output RESULT_FILE [-l|--lambda LAMBDA_VALUE] BOOLEAN_NETWORK_FILE\n\n";
+  os << "  " << prog << " -c|--config CONF_FILE -s|--settings SETTINGS_FILE -o|--output RESULT_FILE [-r|--results-sim SIMULATION_RESULT_FILE ] [-l|--lambda LAMBDA_VALUE] BOOLEAN_NETWORK_FILE\n\n";
   return 1;
 }
 
@@ -111,6 +111,7 @@ int main(int argc, const char * argv[])
 	const char * config_file = NULL;
 	const char * network_file = NULL;
 	const char * result_file = NULL;
+	const char * result_sim_file = NULL;
 
 	std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> optim_settings;
 
@@ -154,6 +155,13 @@ int main(int argc, const char * argv[])
 
 				lambda = atof(argv[++nn]);
 
+			} else if (!strcmp(s, "-r") || !strcmp(s, "--results")) {
+				if (nn == argc-1) {
+					std::cerr << '\n' << prog << ": missing value after option " << s << '\n'; return usage();
+				}
+
+				result_sim_file = argv[++nn];
+
 			} else {
 				std::cerr << '\n' << prog << ": unknown option " << s << std::endl;
 				return usage();
@@ -183,6 +191,12 @@ int main(int argc, const char * argv[])
 
 			std::pair<double, std::map<std::string, double>> result = optim->run();
 			writeResults(result_file, result);
+
+			if (result_sim_file != NULL) {
+				std::ofstream simResultsOutput(result_sim_file);
+				optim->displaySimulationsResults(simResultsOutput);
+				simResultsOutput.close();
+			}
 
 			delete optim;
 
