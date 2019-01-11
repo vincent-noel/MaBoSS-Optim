@@ -8,5 +8,4 @@ Optimization of MaBoSS models
 * JsonCpp
 
 ## Example
-    ./MaBoSS-Optim -c examples/Four_cycle.cfg -p examples/params_ranges.csv -f examples/objective.csv examples/Four_cycle.bnd
-
+    ./MaBoSS-Optim -c examples/Four_cycle.cfg -s examples/settings.json -o result.json -r simulation_values examples/Four_cycle.bnd

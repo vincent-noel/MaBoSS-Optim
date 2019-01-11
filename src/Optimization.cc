@@ -35,8 +35,16 @@ double score() {
 		for (const auto& objective : cell_line->objectives) {
 			std::string node_name = objective.first;
 			double node_score = objective.second;
+		
+			// If type is informed, and it's max
+			if (cell_line->objectives_types[node_name] == "max") {
+				sub_score += pow(node_score - simulation->getMaxNodeDist(node_name), 2);
 
-			sub_score += pow(node_score - simulation->getLastNodeDist(node_name), 2);
+			// Else, we suppose it's last time point
+			} else {
+				sub_score += pow(node_score - simulation->getLastNodeDist(node_name), 2);
+
+			}
 		}
 		score += sub_score;
 		i_cond++;

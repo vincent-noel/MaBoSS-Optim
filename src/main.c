@@ -34,6 +34,7 @@ std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> readSettingsJS
 
 		std::map<std::string, double> conditions;
 		std::map<std::string, double> objectives;
+		std::map<std::string, std::string> objectives_types;
 
 		for (const auto& condition: cell_line["conditions"]) {
 			std::string parameter_name = condition["name"].asString();
@@ -45,11 +46,18 @@ std::pair<std::vector<CellLine *>, std::vector<OptimParameter *>> readSettingsJS
 		for (const auto& objective: cell_line["objectives"]) {
 			std::string objective_name = objective["name"].asString();
 			double objective_value = objective["proba"].asDouble();
-
+			
+			std::string objective_type;
+			if (objective.isMember("type"))
+				objective_type = objective["type"].asString();
+			else
+				objective_type = std::string("end");
+				
 			objectives[objective_name] = objective_value;
+			objectives_types[objective_name] = objective_type;
 		}
 
-		CellLine * cell_line_obj = new CellLine(conditions, objectives);
+		CellLine * cell_line_obj = new CellLine(conditions, objectives, objectives_types);
 		cell_lines.push_back(cell_line_obj);
 	}
 

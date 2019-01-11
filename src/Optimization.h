@@ -15,8 +15,10 @@ class CellLine {
 
 	std::map<std::string, double> conditions;
 	std::map<std::string, double> objectives;
+	std::map<std::string, std::string> objectives_types;
 
-	CellLine(std::map<std::string, double> conditions, std::map<std::string, double> objectives) : conditions(conditions), objectives(objectives) {}
+	CellLine(std::map<std::string, double> conditions, std::map<std::string, double> objectives, std::map<std::string, std::string> objectives_types) : 
+		conditions(conditions), objectives(objectives), objectives_types(objectives_types) {}
 };
 
 class OptimParameter {

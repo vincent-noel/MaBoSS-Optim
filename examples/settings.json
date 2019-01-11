@@ -13,9 +13,11 @@
       "objectives": [
         {
           "name": "A",
+          "type": "max",
           "proba": 0.5
         }, {
           "name": "B",
+          "type": "end",
           "proba": 0
         }
       ]
@@ -32,9 +34,11 @@
       "objectives": [
         {
           "name": "A",
+          "type": "max",
           "proba": 0.1
         }, {
           "name": "B",
+          "type": "end",
           "proba": 0
         }
       ]
