@@ -3,4 +3,4 @@
 	url = https://github.com/vincent-noel/plsa.git
 [submodule "src/MaBoSS-env-2.0"]
 	path = src/MaBoSS-env-2.0
-	url = https://github.com/vincent-noel/MaBoSS-env-2.0
+	url = https://github.com/maboss-bkmc/MaBoSS-env-2.0
