@@ -18,11 +18,11 @@ PLSA_DIR = src/plsa
 
 all: clean MaBoSS-Optim
 
-$(MABOSS_LIB_DIR)/libmaboss.so:
-	make -C $(MABOSS_SRC_DIR) install_lib
+$(MABOSS_LIB_DIR)/libMaBoSS.a:
+	make -C $(MABOSS_SRC_DIR) install_alib
 
 $(MABOSS_INCLUDE_DIR)/MaBEstEngine.h:
-	make -C $(MABOSS_SRC_DIR) install_lib
+	make -C $(MABOSS_SRC_DIR) install_alib
 
 $(PLSA_DIR)/libplsa-serial.so: 
 	make -C $(PLSA_DIR) libplsa-serial.so
@@ -36,8 +36,8 @@ PSetSimulation.o: $(SRC_DIR)/PSetSimulation.h $(SRC_DIR)/PSetSimulation.cc
 Optimization.o: $(SRC_DIR)/Optimization.h $(SRC_DIR)/Optimization.cc
 	$(CC) $(FLAGS) -c $(SRC_DIR)/Optimization.cc -I$(MABOSS_INCLUDE_DIR) -I$(PLSA_SRC_DIR) -o Optimization.o
 
-MaBoSS-Optim: main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libmaboss.so $(PLSA_DIR)/libplsa-serial.so
-	$(CC) $(FLAGS) main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libmaboss.so $(PLSA_DIR)/libplsa-serial.so -lm -ljsoncpp -o MaBoSS-Optim -lpthread
+MaBoSS-Optim: main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libMaBoSS.a $(PLSA_DIR)/libplsa-serial.so
+	$(CC) $(FLAGS) main.o PSetSimulation.o Optimization.o $(MABOSS_LIB_DIR)/libMaBoSS.a $(PLSA_DIR)/libplsa-serial.so -lm -ljsoncpp -lpthread -ldl -o MaBoSS-Optim
 	rm -f *.o
 
 # Test

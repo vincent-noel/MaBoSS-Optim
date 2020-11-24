@@ -49,23 +49,18 @@ public:
 	PSetSimulation(const char * network_filename, const char * config_filename, std::map<std::string, double> parameter_set) : 
     parameter_set(parameter_set) {
 
-    // Resetting old network variables
-    // Probably should be done while we parse the network ?
-    IStateGroup::reset();
-    NodeDecl::reset();
-
 		network = new Network();
 		network->parse(network_filename);
 
-		config = RunConfig::getInstance();
+		config = new RunConfig();
 		config->parse(network, config_filename);
 
     IStateGroup::checkAndComplete(network);
-
 	}
 
 	~PSetSimulation() {
     delete simulation;
+    delete config;
 		delete network;
 	};
 
@@ -87,5 +82,7 @@ public:
   const double getFirstNodeDist(std::string& label);
   const double getLastNodeDist(std::string& label);
   const double getMaxNodeDist(std::string& label);
+
+  const STATE_MAP<NetworkState_Impl, double> getLastStateDist();
 
 };

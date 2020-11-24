@@ -32,11 +32,12 @@
 void PSetSimulation::run() {
 
 	// Getting list of parameters 
-	SymbolTable* listOfParameters = SymbolTable::getInstance();
+	SymbolTable* listOfParameters = network->getSymbolTable();
     
 	// Using parameter set
 	for (auto const & parameter : parameter_set) {
 
+    // Parameter
     if (parameter.first.rfind("$", 0) == 0){
       const Symbol * param = listOfParameters->getSymbol(parameter.first);
 
@@ -45,6 +46,8 @@ void PSetSimulation::run() {
 
       listOfParameters->setSymbolValue(param, parameter.second);
     }
+
+    // Initial values
     else {
       Node * node = network->getNode(parameter.first);
       IStateGroup::setNodeProba(network, node, parameter.second); 
@@ -146,6 +149,9 @@ const double PSetSimulation::getMaxNodeDist(std::string& node_label) {
   return result;
 }
 
+const STATE_MAP<NetworkState_Impl, double> PSetSimulation::getLastStateDist() {
+  return simulation->getNthStateDist(simulation->getMaxTickIndex());
+}
 
 void PSetSimulation::display(std::ostream & out) {
 
