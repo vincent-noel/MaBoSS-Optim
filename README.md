@@ -1,4 +1,4 @@
-# MaBoSS-Optim [![Build Status](https://travis-ci.org/vincent-noel/MaBoSS-Optim.svg?branch=master)](https://travis-ci.org/vincent-noel/MaBoSS-Optim)
+# MaBoSS-Optim ![Ubuntu 18.04](https://github.com/vincent-noel/MaBoSS-Optim/workflows/Ubuntu%2018.04/badge.svg)
 Optimization of MaBoSS models
 
 ## Dependencies
